@@ -112,3 +112,6 @@ jobs:
               vez de inventar una explicación.
             - Todo el texto de salida (labels descriptivas, comentario) debe estar en español,
               igual que los issues de este repositorio.
+            - El comentario que publiques debe estar escrito en formato Markdown válido y
+              renderizable por GitHub (encabezados, listas, negritas, bloques de código con
+              ```, etc.), siguiendo la plantilla de la sección "Formato exacto del comentario".
