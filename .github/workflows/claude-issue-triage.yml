@@ -1,0 +1,114 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    if: github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Issue Triage
+        id: claude-triage
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --allowedTools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh label list:*),Bash(gh label create:*),Bash(gh issue edit:*),Bash(gh issue comment:*)"
+          prompt: |
+            Eres un asistente de triage de issues para el repositorio ${{ github.repository }}.
+            Se acaba de disparar el evento `issues.${{ github.event.action }}` sobre el issue #${{ github.event.issue.number }}.
+
+            ## Contexto del proyecto
+            Este repo es un Tetris clásico en JavaScript vanilla con HTML5 Canvas. Sin
+            frameworks, sin dependencias, sin build, sin tests ni linter. Tres archivos:
+            `index.html` (DOM/canvas), `style.css` (estilos retro), `game.js` (toda la lógica,
+            ~300 líneas, estado mutuable a nivel de módulo). Lee **`CLAUDE.md`** primero: ahí
+            está documentado el modelo del tablero, `PIECES`, `COLORS`, `rotateCW`, `collide`,
+            `tryRotate` (wall kicks), `lockPiece`/`merge`/`clearLines`, `ghostY`, el sistema de
+            puntuación (`LINE_SCORES`), el nivel/velocidad (`dropInterval`) y las constantes
+            tuneables al principio de `game.js`.
+
+            ## Tarea
+            1. Lee el issue actual con:
+               `gh issue view ${{ github.event.issue.number }} --json title,body,labels,author,comments`
+            2. Lee las labels existentes del repo con `gh label list`.
+            3. Explora el código (`Read`, `Grep`, `Glob`) hasta identificar con precisión la
+               zona afectada (archivo y línea/función concretos). No adivines sin mirar el código.
+            4. Asigna labels apropiadas con
+               `gh issue edit ${{ github.event.issue.number }} --add-label "..."`.
+               - Usa preferentemente las labels ya existentes del repo (bug, enhancement,
+                 documentation, accessibility, question, good first issue, help wanted,
+                 duplicate, invalid, wontfix) cuando encajen.
+               - Si ninguna existente encaja bien, puedes **crear una nueva** con
+                 `gh label create "<nombre>" --description "<desc>" --color "<hex>"` siguiendo
+                 la convención `area:gameplay`, `area:ui`, `area:render`, `area:input`,
+                 `area:docs`, `prioridad:alta|media|baja`, `complejidad:baja|media|alta`. Si
+                 `gh label create` falla porque ya existe, ignora el error y continúa.
+               - Solo **añade** labels, nunca elimines las que ya tenga el issue. Aplica como
+                 máximo 5 labels en total.
+            5. Escribe un diagnóstico y publícalo como comentario **nuevo** (no edites
+               comentarios anteriores) con:
+               `gh issue comment ${{ github.event.issue.number }} --body-file <archivo temporal>`
+               (usa un archivo temporal para evitar problemas de escaping con backticks/saltos
+               de línea).
+
+            ## Formato exacto del comentario (en español)
+            Empieza el body con la línea literal `<!-- claude-triage -->` (marcador oculto,
+            no se renderiza) y luego:
+
+            ```
+            ## 🤖 Diagnóstico automático
+
+            **Labels aplicadas:** <lista o "ninguna nueva">
+
+            ### Resumen
+            <1-2 frases de qué reporta o pide el issue>
+
+            ### Clasificación
+            <bug / mejora / duda / documentación> — severidad: <baja/media/alta>
+
+            ### Zona del código afectada
+            <rutas y líneas concretas, ej. `game.js:123` (función X), `style.css:45`>
+
+            ### Causa probable
+            <explicación técnica basada en el código realmente leído>
+
+            ### Plan de solución propuesto
+            1. <paso concreto: qué función/constante/línea tocar>
+            2. ...
+
+            ### Riesgos / efectos colaterales
+            <qué otras partes del juego dependen de eso>
+
+            ### Complejidad estimada
+            <baja/media/alta> — <justificación breve>
+
+            ### Información faltante
+            <preguntas al autor si el issue es ambiguo, o "Ninguna, el issue es suficientemente claro.">
+            ```
+
+            ## Reglas estrictas
+            - NO modifiques ningún archivo del repositorio, no hagas commits ni abras PRs.
+            - NO cierres ni renombres el issue.
+            - NO elimines labels existentes.
+            - Si no logras determinar la causa exacta, dilo explícitamente en el diagnóstico en
+              vez de inventar una explicación.
+            - Todo el texto de salida (labels descriptivas, comentario) debe estar en español,
+              igual que los issues de este repositorio.
