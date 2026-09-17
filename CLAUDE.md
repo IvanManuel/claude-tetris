@@ -20,8 +20,8 @@ There are no tests, linter, or package.json in this repo.
 
 Everything lives in one file with module-level mutable state (`board`, `current`, `next`, `score`, `lines`, `level`, `paused`, `gameOver`, `dropInterval`, etc.) set up in `init()`.
 
-- **Board model**: `ROWS × COLS` matrix; each cell is `0` (empty) or a color index 1–7 identifying the locked piece.
-- **Pieces**: defined as square matrices in `PIECES` (index 0 unused, 1–7 = I/O/T/S/Z/J/L). Rotation is `rotateCW` — transpose + row reversal, no piece-specific rotation tables.
+- **Board model**: `ROWS × COLS` matrix; each cell is `0` (empty) or a color index 1–8 identifying the locked piece.
+- **Pieces**: defined as square matrices in `PIECES` (index 0 unused, 1–8 = I/O/T/S/Z/J/L/N). Rotation is `rotateCW` — transpose + row reversal, no piece-specific rotation tables. Piece 8 (N, "tuerca"/nut) is a 3×3 ring with an empty center cell (`[[8,8,8],[8,0,8],[8,8,8]]`); it needs no special-case code since `collide`/`merge` already operate cell-by-cell and treat `0` as empty, but its hollow center can trap an empty cell inside locked terrain once it lands.
 - **Collision** (`collide`): checks a shape at an offset against board bounds and existing locked cells.
 - **Wall kicks** (`tryRotate`): after rotating, tries offsets `[0, -1, 1, -2, 2]` and keeps the first that doesn't collide.
 - **Game loop** (`loop`): driven by `requestAnimationFrame`; accumulates delta time in `dropAccum` and advances the piece one row once it exceeds `dropInterval`.
