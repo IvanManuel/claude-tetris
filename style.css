@@ -44,6 +44,15 @@
   --block-highlight: rgba(255, 255, 255, 0.35);
 }
 
+/* ---- Skins visuales del tablero ----
+   Se declara después de [data-theme="light"] (misma especificidad) para
+   que gane sobre el tema claro cuando ambos atributos están presentes. */
+[data-skin="neon"] {
+  --board-bg: #05050a;
+  --board-border: #1a1a2e;
+  --grid-color: #14141f;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -178,6 +187,22 @@ body {
   border: 1px solid var(--board-border);
   background: var(--board-bg);
   border-radius: 4px;
+}
+
+/* ---- Selector de skin ---- */
+.skin-select {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  color: var(--kbd-color);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.skin-select:focus {
+  outline: 1px solid var(--btn-bg);
 }
 
 /* ---- Controles ---- */
